@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Carrito de compras</title>
+    <link rel="stylesheet" href="carrito_Style.css" />
+</head>
+
+<body>
+    <div class="content">
+        <h1 class="title">Carrito de compras</h1>
+        
+        <section class="botones">
+            <div class="botones-principales">
+                <div class="boton" id="captura_articulos_btn">
+                    <p class="big-text"">Captura de articulos</p>
+                    </div>
+                    <div class=" boton" id="compra_articulos_btn">
+                    <p class="big-text">Compra articulos</p>
+                </div>
+            </div>
+            <div class="botones-secundarios">
+                <div class="boton">
+                    <p class="big-text" id="carrito_btn">Carrito de compras</p>
+                </div>
+                <!-- <div class="boton">
+                        <p class="big-text" id="compra">Comprar</p>
+                    </div> -->
+            </div>
+        </section>
+
+        <div class="captura-articulo" id="captura_articulo">
+            <h2>Captura de articulo</h2>
+            <ul>
+                <li>
+                    <label for="nombre_articulo">Nombre del articulo</label><br>
+                    <input type="text" name="answer" id="nombre_articulo" />
+                </li>
+                <li>
+                    <label for="desc_articulo">Descripcion del articulo</label><br>
+                    <input type="text" name="answer" id="desc_articulo" />
+                </li>
+                <li>
+                    <label for="precio">Precio</label><br>
+                    <input type="number" name="answer" id="precio" />
+                </li>
+                <li>
+                    <label for="cantidad">Cantidad</label><br>
+                    <input type="number" name="answer" id="cantidad" />
+                </li>
+                <li>
+                    <label for="foto">Foto</label><br>
+                    <!-- <img id="alta_imagen" width="50px" src="no-disponible.png"></img><br> -->
+                    <input type="file" name="answer" id="foto" multiple="false" accept="image/*"
+                        onchange="encodeImageFileAsURL(this)" />
+                </li>
+            </ul>
+            <button onclick="capturaDeArticulos()">Captura de articulo</button>
+            
+        </div>
+
+        <section class="buscar-articulos" id="buscar-articulos">
+            <h2>Buscar articulo</h2>
+            <input type="text" id="input_buscar">
+            <button id="buscar">Buscar</button>
+        </section>
+
+        <section class="lista-articulos" id="lista_articulos">
+            <h2>Lista de articulos</h2>
+            <div class="articulos" id="articulos">
+
+            </div>
+        </section>
+
+        <section class="lista-articulos-carrito" id="lista_articulos_carrito">
+            <h2>Lista de articulos en carrito</h2>
+            <div class="articulos" id="articulos_carrito">
+            </div>
+        </section>
+    </div>
+    <script>
+        const captura_articulos = document.getElementById("captura_articulos_btn");
+        const consultarTodosArticulos = document.getElementById("compra_articulos_btn");
+        const carrito = document.getElementById("carrito_btn");
+        const buscar = document.getElementById("buscar");
+
+        var foto = null;
+
+        consultarTodosArticulos.addEventListener("click", () => {
+            document.getElementById("buscar-articulos").style.display = "";
+            document.getElementById("lista_articulos").style.display = "";
+            document.getElementById("carrito_btn").style.display = "";
+            document.getElementById("lista_articulos_carrito").style.display = "none";
+            document.getElementById("captura_articulo").style.display = "none";
+
+            consultaArticulos();
+        });
+
+        const consultaArticulos = () => {
+            let cliente = new WSClient("/Servicio/rest/ws");
+            cliente.post("articulos", {
+                articulo: {
+                    nombre_articulo: null,
+                    desc_articulo: null,
+                    precio: null,
+                    cantidad: null,
+                    foto: null
+                }
+            }, (code, result) => {
+                if (code === 200) {
+                    let lista = [];
+                    result.map((item) => {
+                        lista.push(item);
+                    })
+                    muestra_articulo(lista);
+                } else {
+                    alert("Error-consulta: " + JSON.stringify(result));
+                }
+            });
+        };
+
+        const muestra_articulo = (lista) => {
+            let code = "";
+            lista.map((item) => {
+                code += `
+                <div class="articulo" id="${item.id_articulo}">
+                    <ul>
+                        <li>
+                            <label id="nombre_articulo_text">Nombre: ${item.nombre_articulo}</label>
+                        </li>
+                        <li>
+                            <label id="desc_articulo_text">Descripcion: ${item.desc_articulo}</label>
+                        </li>
+                        <li>
+                            <span>$:</span><label id="precio_text"> ${item.precio}</label>
+                        </li>
+                        <li>
+                            <label id="cantidad_text">Stock: ${item.cantidad}</label>
+                        </li>
+                        <li>
+                            <label id="cantidad_text">Cantidad</label>
+                            <input type="number" name="answer" id="cantidad_compra_${item.id_articulo}" value="1"/>
+                        </li>
+                        <li>
+                            <img src='data:image/jpeg;base64,${item.foto}' alt="">
+                        </li>
+                        <button onclick="comprarArticulo(${item.id_articulo}, cantidad_compra_${item.id_articulo}.value)">Comprar</button>
+                    </ul>
+                <div>
+                `;
+            })
+            document.getElementById('articulos').innerHTML = code;
+        }
+
+        captura_articulos.addEventListener("click", () => {
+            document.getElementById("buscar-articulos").style.display = "none";
+            document.getElementById("lista_articulos").style.display = "none";
+            document.getElementById("carrito_btn").style.display = "none";
+            document.getElementById("lista_articulos_carrito").style.display = "none";
+            document.getElementById("captura_articulo").style.display = "";
+        });
+
+        const obtenerArticulo = () => {
+            if (document.getElementById("nombre_articulo").value === "") {
+                alert("Ingresar nombre de articulo");
+                return null;
+            } else if (document.getElementById("desc_articulo").value === "") {
+                alert("Ingresar descripcion de articulo");
+                return null;
+            } else if (
+                document.getElementById("precio").value === "" ||
+                document.getElementById("precio").value <= 0
+            ) {
+                alert("Ingresar precio valido de articulo");
+                return null;
+            } else if (
+                document.getElementById("cantidad").value === "" ||
+                document.getElementById("cantidad").value <= 0
+            ) {
+                alert("Ingresar cantidad valida de articulo");
+                return null;
+            } else if (document.getElementById("foto").value === "") {
+                alert("Ingresar foto de articulo");
+                return null;
+            }
+
+            let articulo = {
+                nombre_articulo: document.getElementById("nombre_articulo").value,
+                desc_articulo: document.getElementById("desc_articulo").value,
+                precio: document.getElementById("precio").value,
+                cantidad: document.getElementById("cantidad").value,
+                foto: document.getElementById("foto").value,
+            };
+            return articulo;
+        };
+
+        const limpiarInputs = () => {
+            document.getElementById("nombre_articulo").value = "";
+            document.getElementById("desc_articulo").value = "";
+            document.getElementById("precio").value = "";
+            document.getElementById("cantidad").value = "";
+            document.getElementById("foto").value = null;
+        };
+
+        const encodeImageFileAsURL = (element) => {
+            var file = element.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onloadend = function () {
+                foto = reader.result.split(',')[1];
+            }
+            reader.readAsDataURL(file);
+        }
+
+        const capturaDeArticulos = () => {
+            let articulo = obtenerArticulo();
+            if (articulo === null) {
+                return;
+            } else {
+                let cliente = new WSClient("/Servicio/rest/ws");
+                cliente.post("captura_articulo", {
+                    articulo: {
+                        nombre_articulo: document.getElementById("nombre_articulo").value,
+                        desc_articulo: document.getElementById("desc_articulo").value,
+                        precio: document.getElementById("precio").value,
+                        cantidad: document.getElementById("cantidad").value,
+                        foto: foto
+                    }
+                }, (code, result) => {
+                    if (code === 200) {
+                        alert("Articulo dado de alta");
+                    } else {
+                        alert("Error-captura " + JSON.stringify(result));
+                    }
+                });
+                limpiarInputs();
+            }
+        };
+
+        carrito.addEventListener("click", () => {
+            document.getElementById("buscar-articulos").style.display = "none";
+            document.getElementById("lista_articulos").style.display = "none";
+            document.getElementById("carrito_btn").style.display = "";
+            document.getElementById("lista_articulos_carrito").style.display = "";
+            document.getElementById("captura_articulo").style.display = "none";
+
+            mostrarArticulosEnCarrito();
+        });
+
+        const mostrarArticulosEnCarrito = () => {
+            let cliente = new WSClient("/Servicio/rest/ws");
+            let lista = [];
+            cliente.post("carrito", {
+                articulo: {
+                    nombre_articulo: null,
+                    desc_articulo: null,
+                    precio: null,
+                    cantidad: null,
+                    foto: null
+                }
+            }, (code, result) => {
+                if (code === 200) {
+                    let lista = [];
+                    result.map((item) => {
+                        // console.log("Item Resultado", item);
+                        lista.push(item);
+                    })
+                    muestra_articulo_carrito(lista);
+                } else {
+                    alert("Error-carrito: " + JSON.stringify(result));
+                }
+            });
+        };
+
+        const muestra_articulo_carrito = (lista) => {
+            let code = "";
+            let total = 0;
+            lista.map((item) => {
+                console.log(item);
+                total += item.precio * item.cantidad;
+                code += `
+                <div class="articulo" id="${item.id_carrito}">
+                    <ul>
+                        <li>
+                            <label id="nombre_articulo_text">Nombre: ${item.nombre_articulo}</label>
+                        </li>
+                        <li>
+                            <label id="desc_articulo_text">Descripcion: ${item.desc_articulo}</label>
+                        </li>
+                        <li>
+                            <span>$:</span><label id="precio_text"> ${item.precio}</label>
+                        </li>
+                        <li>
+                            <label id="cantidad_text">Cantidad: ${item.cantidad}</label>
+                        </li>
+                        <li>
+                            <label id="cantidad_text">Costo $:${item.precio * item.cantidad}</label>
+                        </li>
+                        <li>
+                            <img src='data:image/jpeg;base64,${item.foto}' alt="">
+                        </li>
+                    </ul>
+                </div>
+                `;
+            })
+            code += `<span>Total $: ${total}</span>`
+            document.getElementById('articulos_carrito').innerHTML = code;
+        }
+
+
+        buscar.addEventListener("click", () => {
+            let articuloBuscar = document.getElementById("input_buscar").value;
+            var cliente = new WSClient("/Servicio/rest/ws");
+            cliente.post("buscar_articulo", { nombre_articulo: articuloBuscar },
+                (code, result) => {
+                    if (code === 200) {
+                        let lista = [];
+                        result.map((item) => {
+                            lista.push(item);
+                        })
+                        muestra_articulo(lista);
+                    } else {
+                        alert("Error-buscar: " + JSON.stringify(result));
+                    }
+                });
+        })
+
+        const comprarArticulo = (id_articulo, cantidad) => {
+            console.log(id_articulo, cantidad);
+            let cliente = new WSClient("/Servicio/rest/ws");
+            cliente.post("compra",
+                {
+                    carrito: {
+                        cantidad: Number(cantidad),
+                        id_articulo: id_articulo
+                    }
+                },
+                function (code, result) {
+                    if (code == 200) {
+                        alert("Articulo agregado al carrito");
+                        consultaArticulos();
+                    }
+                    else
+                        alert("Compra-Error: " + JSON.stringify(result));
+                });
+        }
+
+        const setHidden = () => {
+            document.getElementById("buscar-articulos").style.display = "none";
+            document.getElementById("lista_articulos").style.display = "none";
+            document.getElementById("captura_articulo").style.display = "none";
+            document.getElementById("carrito_btn").style.display = "none";
+            document.getElementById("lista_articulos_carrito").style.display = "none";
+        };
+
+        setHidden();
+
+    </script>
+    <script src="WSClient.js"></script>
+</body>
+
+</html>

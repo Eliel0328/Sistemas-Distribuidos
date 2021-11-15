@@ -1,0 +1,12 @@
+
+
+Windows:
+javac -cp gson-2.8.6.jar ejemploGSON.java
+java -cp gson-2.8.6.jar;. ejemploGSON
+
+Linux:
+javac -cp gson-2.8.6.jar ejemploGSON.java
+java -cp gson-2.8.6.jar:. ejemploGSON
+
+javac -cp gson-2.8.6.jar ejemploGSON1.java
+java -cp gson-2.8.6.jar:. ejemploGSON1

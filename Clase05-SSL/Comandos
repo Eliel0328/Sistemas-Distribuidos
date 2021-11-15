@@ -1,0 +1,13 @@
+keytool -genkeypair -keyalg RSA -alias certificado_servidor -keystore keystore_servidor.jks -storepass 1234567
+
+keytool -exportcert -keystore keystore_servidor.jks -alias certificado_servidor -rfc -file certificado_Servidor.pem
+
+keytool -import -alias certificado_servidor -file certificado_Servidor.pem -keystore keystore_cliente.jks -storepass 123456
+keytool -import -alias certificado_servidor -file certificado_Servidor.pem -keystore keystore_servidor.jks -storepass 12345678
+
+Como ejecutar servidor
+java -Djavax.net.ssl.keystore=keystore_servidor.jks -Djavax.net.ssl.keyStorePassword=1234567 ServidorSSL
+
+java -Djavax.net.ssl.trustStore=keystore_cliente.jks -Djavax.net.ssl.trustStorePassword=123456 ClienteSSL
+
+
